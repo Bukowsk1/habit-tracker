@@ -1,0 +1,57 @@
+# --- Python ---
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.py.class
+
+# --- Virtual environment ---
+.venv/
+!/.env.example  # Всегда добавляем пример окружения
+.env
+.env.*
+*.env
+
+# --- Byte-compiled / optimized / DLL files ---
+*.so
+*.dll
+*.dylib
+
+# --- Unit test / coverage reports ---
+.coverage
+.coverage.*
+.cache/
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+htmlcov/
+
+# --- Type checkers ---
+.mypy_cache/
+.dmypy.json
+dmypy.json
+.pytype/
+
+# --- FastAPI / Uvicorn logs ---
+*.log
+
+# --- Editors & IDEs ---
+.vscode/
+.idea/
+*.iml
+
+# --- OS files ---
+.DS_Store
+Thumbs.db
+
+# --- Build / dist ---
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# --- Databases ---
+*.sqlite3
+*.db
+*.sqlite
