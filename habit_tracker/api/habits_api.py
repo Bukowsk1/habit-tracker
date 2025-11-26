@@ -19,11 +19,11 @@ from habit_tracker.core.models import (
 router = APIRouter()
 
 
-@router.post("/habits/", response_model=HabitBase, status_code=status.HTTP_201_CREATED)
+@router.post("/habits/", response_model=HabitResponse, status_code=status.HTTP_201_CREATED)
 def create_habit_endpoint(habit: HabitCreate):
     try:
         created = create_habit(habit)
-        return HabitBase(id=created.id, name=created.name)
+        return HabitResponse(id=created.id, name=created.name, marks=created.marks, streak=created.streak)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -55,13 +55,13 @@ def get_habit_by_id_endpoint(habit_id: int):
     )
 
 
-@router.put("/habits/{habit_id}/", response_model=HabitBase)
+@router.put("/habits/{habit_id}/", response_model=HabitResponse)
 def update_habit_endpoint(habit_id: int, habit: HabitUpdate):
     try:
         updated = update_habit(habit_id, habit)
         if updated is None:
             raise HTTPException(status_code=404, detail="Habit not found")
-        return HabitBase(id=updated.id, name=updated.name)
+        return HabitResponse(id=updated.id, name=updated.name, marks=updated.marks, streak=updated.streak)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
