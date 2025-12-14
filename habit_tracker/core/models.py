@@ -1,68 +1,42 @@
+from pydantic import BaseModel, Field, field_validator
 from datetime import date
-from typing import List
-from pydantic import BaseModel, validator, Field
-
 
 class Habit:
-    def __init__(self, id: int, name: str, marks: List[date] = None):
+    """Внутренняя модель привычки для хранения в памяти."""
+    def __init__(self, id: int, name: str, marks: list[date] | None = None) -> None:
         self.id: int = id
         self.name: str = name
-        self.marks: List[date] = marks if marks is not None else []
+        self.marks: list[date] = [] if marks is None else marks
         self.streak: int = 0
 
-    def __repr__(self) -> str:
-        return f"Habit(id={self.id!r}, name={self.name!r}, marks={self.marks!r})"
 
-
+# Input
 class HabitCreate(BaseModel):
     name: str = Field(...)
-
-    @validator('name')
-    def name_must_not_be_empty(cls, v):
-        if not v or not v.strip():
-            raise ValueError('Habit name cannot be empty.')
+    @field_validator("name")
+    @classmethod
+    def name_must_not_be_empty(cls, v: str):
+        if len(v.strip()) == 0:
+            raise ValueError("Habit name cannot be empty.")
         return v.strip()
 
 
-class HabitResponse(BaseModel):
-    id: int
-    name: str
+class HabitUpdate(HabitCreate):
+    pass
 
-
-class HabitMarkResponse(BaseModel):
-    id: int
-    name: str
-    last_marked_at: date
-    streak: int
-
-
-class HabitListResponse(BaseModel):
-    id: int
-    name: str
-    marks: List[date] = []
-    streak: int
-
-
-class HabitUpdate(BaseModel):
-    name: str = Field(...)
-
-    @validator('name')
-    def name_must_not_be_empty(cls, v):
-        if not v or not v.strip():
-            raise ValueError('Habit name cannot be empty.')
-        return v.strip()
-
-
+#Output
 class HabitBase(BaseModel):
-    id: int
-    name: str
+    id: int = Field(...)
+    name: str = Field(...)
 
 
 class HabitResponse(HabitBase):
-    marks: List[date] = []
-    streak: int
+    marks: list[date] = Field(...)
+    streak: int = Field(...)
 
 
-class HabitDetailResponse(HabitBase):
-    marks: List[date] = []
-    streak: int
+class HabitMarkResponse(HabitBase):
+    last_marked_at: date = Field(...)
+    streak: int = Field(...)
+
+        

@@ -1,88 +1,67 @@
-from typing import List
 from fastapi import APIRouter, status, HTTPException
-from habit_tracker.core.services import (
-    create_habit,
-    get_all_habits_with_details,
-    get_habit_by_id_with_details,
-    update_habit,
-    delete_habit,
-    mark_habit,
-)
-from habit_tracker.core.models import (
-    HabitCreate,
-    HabitUpdate,
-    HabitBase,
-    HabitResponse,
-    HabitMarkResponse,
-)
+from habit_tracker.core.models import HabitResponse, HabitCreate, HabitMarkResponse, HabitBase, HabitUpdate
+from habit_tracker.core import services
 
 router = APIRouter()
 
-
-@router.post("/habits/", response_model=HabitResponse, status_code=status.HTTP_201_CREATED)
-def create_habit_endpoint(habit: HabitCreate):
+@router.post("/", response_model=HabitBase, status_code=status.HTTP_201_CREATED)
+def create_habit(habit: HabitCreate):
+    """Создать новую привычку."""
     try:
-        created = create_habit(habit)
-        return HabitResponse(id=created.id, name=created.name, marks=created.marks, streak=created.streak)
+        habit = services.create_habit(habit)
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    return habit
 
 
-@router.get("/habits/", response_model=List[HabitResponse])
-def get_all_habits_endpoint():
-    habits = get_all_habits_with_details()
-    result = []
-    for h in habits:
-        result.append(HabitResponse(
-            id=h['id'],
-            name=h['name'],
-            marks=h['marks'],
-            streak=h['streak']
-        ))
-    return result
+@router.get("/", response_model=list[HabitResponse])
+def get_all_habits():
+    """Получить список всех привычек."""
+    all_habits = services.get_all_habits_with_details()
+    return [
+        HabitResponse(**habit)
+        for habit in all_habits
+    ]
 
 
-@router.get("/habits/{habit_id}/", response_model=HabitResponse)
-def get_habit_by_id_endpoint(habit_id: int):
-    habit = get_habit_by_id_with_details(habit_id)
+@router.get("/{id}/", response_model=HabitResponse)
+def get_habit(id: int):
+    habit = services.get_habit_by_id_with_details(id)
     if habit is None:
-        raise HTTPException(status_code=404, detail="Habit not found")
-    return HabitResponse(
-        id=habit['id'],
-        name=habit['name'],
-        marks=habit['marks'],
-        streak=habit['streak']
-    )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Привычка с таким id не найдена.")
+    return habit
 
 
-@router.put("/habits/{habit_id}/", response_model=HabitResponse)
-def update_habit_endpoint(habit_id: int, habit: HabitUpdate):
+@router.put("/{id}/", response_model=HabitBase, status_code=status.HTTP_200_OK)
+def update_habit(id: int, habit_data: HabitUpdate):
     try:
-        updated = update_habit(habit_id, habit)
-        if updated is None:
-            raise HTTPException(status_code=404, detail="Habit not found")
-        return HabitResponse(id=updated.id, name=updated.name, marks=updated.marks, streak=updated.streak)
+        habit = services.update_habit(id, habit_data)
+        if habit is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Привычка с таким id не найдена.")
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    return habit
 
 
-@router.delete("/habits/{habit_id}/", status_code=status.HTTP_204_NO_CONTENT)
-def delete_habit_endpoint(habit_id: int):
-    if not delete_habit(habit_id):
-        raise HTTPException(status_code=404, detail="Habit not found")
+@router.delete("/{id}/", status_code=status.HTTP_204_NO_CONTENT)
+def delete_habit(id: int):
+    is_delete = services.delete_habit(id)
+    if is_delete:
+        return
+    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Привычка с таким id не найдена.")
 
 
-@router.post("/habits/{habit_id}/mark/", response_model=HabitMarkResponse)
-def mark_habit_endpoint(habit_id: int):
+@router.post("/{id}/mark/", response_model=HabitMarkResponse, status_code=status.HTTP_200_OK)
+def mark_habit(id: int):
     try:
-        result = mark_habit(habit_id)
-        if result is None:
-            raise HTTPException(status_code=404, detail="Habit not found")
-        return HabitMarkResponse(
-            id=result['id'],
-            name=result['name'],
-            last_marked_at=result['last_marked_at'],
-            streak=result['streak']
-        )
+        marked_habit = services.mark_habit(id)
+        if marked_habit is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Привычка с таким id не найдена.")
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    return marked_habit
+
+
+
+
+
