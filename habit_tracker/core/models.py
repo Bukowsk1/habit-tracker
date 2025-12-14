@@ -39,4 +39,19 @@ class HabitMarkResponse(HabitBase):
     last_marked_at: date = Field(...)
     streak: int = Field(...)
 
+
+class HabitStatsResponse(BaseModel):
+    """Модель для ответа с статистикой привычки."""
+    id: int
+    name: str
+    total_marks: int
+    current_streak: int
+    max_streak: int
+    success_rate: float
+    last_dates: list[date]
+
+    class Config:
+        json_encoders = {
+            date: lambda v: v.isoformat()
+        }
         

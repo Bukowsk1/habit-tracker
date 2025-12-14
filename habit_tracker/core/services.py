@@ -32,24 +32,16 @@ def create_habit(habit_data: HabitCreate) -> Habit:
     return new_habit
 
 
-def mark_habit(habit_id: int) -> dict | None:
+def mark_habit_completed(habit_id: int) -> Habit:
     """Отметить выполнение привычки за текущий день."""
-    habit = habits_db.get(habit_id, None)
-    if habit is None:
-        return None
+    habit = get_habit_by_id(habit_id)
 
     date_today = TODAY
     if date_today in habit.marks:
         raise HabitAlreadyMarkedTodayException()
-    
+
     habit.marks.append(date_today)
-    marked_habit = {
-        "id": habit_id,
-        "name": habit.name,
-        "last_marked_at": date_today,
-        "streak": calculate_streak(habit.marks)
-    }
-    return marked_habit
+    return habit
 
 
 def calculate_streak(marks: list[date]) -> int:
@@ -85,27 +77,63 @@ def calculate_streak(marks: list[date]) -> int:
     return streak
     
 
-def get_all_habits_with_details() -> list[dict]:
-    habits_list = []
-    for h in habits_db.values():
-        habit = {
-            "id": h.id,
-            "name": h.name,
-            "marks": h.marks,
-            "streak": calculate_streak(h.marks)
-        }
-        habits_list.append(habit)
-
-    return sorted(habits_list, key=lambda x: x["id"]) 
+def get_all_habits() -> list[Habit]:
+    """Возвращает список всех привычек."""
+    return list(habits_db.values())
 
 
-def update_habit(habit_id: int, habit_data: HabitUpdate) -> Habit | None:
-    if habit_id not in habits_db:
-        return None
+def calculate_max_streak(marks: list[date]) -> int:
+    """Рассчитывает максимальный streak (серию последовательных дней) за всё время."""
+    if not marks:
+        return 0
 
-    habit = habits_db[habit_id]
+    unique_marks = sorted(set(marks))
+    max_streak = 0
+    current_streak = 1
+
+    for i in range(1, len(unique_marks)):
+        if (unique_marks[i] - unique_marks[i-1]).days == 1:
+            current_streak += 1
+        else:
+            max_streak = max(max_streak, current_streak)
+            current_streak = 1
+
+    max_streak = max(max_streak, current_streak)
+    return max_streak
+
+
+def calculate_habit_stats(habit: Habit) -> dict:
+    """Рассчитывает полную статистику по привычке."""
+    total_marks = len(habit.marks)
+    current_streak = calculate_streak(habit.marks)
+    max_streak = calculate_max_streak(habit.marks)
+
+    # Расчет success_rate
+    if not habit.marks:
+        success_rate = 0.0
+    else:
+        first_mark = min(habit.marks)
+        days_since_start = (TODAY - first_mark).days + 1
+        success_rate = round((total_marks / days_since_start) * 100, 2)
+
+    # Последние 5 дат в обратном порядке
+    last_dates = sorted(habit.marks, reverse=True)[:5]
+
+    return {
+        "total_marks": total_marks,
+        "current_streak": current_streak,
+        "max_streak": max_streak,
+        "success_rate": success_rate,
+        "last_dates": last_dates
+    } 
+
+
+def update_habit(habit_id: int, habit_data: HabitUpdate) -> Habit:
+    """Обновляет привычку."""
+    habit = get_habit_by_id(habit_id)
+
     habit_data_name = habit_data.name.strip()
-    
+
     if len(habit_data_name) == 0:
         raise InvalidInputException(detail="Habit name cannot be empty.")
 
@@ -114,40 +142,24 @@ def update_habit(habit_id: int, habit_data: HabitUpdate) -> Habit | None:
 
     for h in habits_db.values():
         if habit_data_name == h.name:
-            raise HabitNotFoundException()
-            
+            raise HabitNameConflictException()
+
     habit.name = habit_data_name
     return habit
     
     
-def delete_habit(habit_id: int) -> bool:
-    if habits_db.pop(habit_id, None) is None:
-        return False
-    return True
+def delete_habit(habit_id: int) -> None:
+    """Удаляет привычку."""
+    get_habit_by_id(habit_id)  # Проверит существование и выбросит исключение если нет
+    habits_db.pop(habit_id)
         
 
-def is_habit_marked_today(habit_id: int) -> bool:
-    habit = habits_db.get(habit_id, None)
-
+def get_habit_by_id(habit_id: int) -> Habit:
+    """Возвращает привычку по ID."""
+    habit = habits_db.get(habit_id)
     if habit is None:
-        return False
-
-    if TODAY in habit.marks:
-        return True
-    return False
-
-
-def get_habit_by_id_with_details(habit_id: int) -> dict | None:
-    habit = habits_db.get(habit_id, None)
-    if habit is None:
-        return None
-    habit_dict = {
-        "id": habit_id,
-        "name": habit.name,
-        "marks": habit.marks,
-        "streak": calculate_streak(habit.marks)
-    }
-    return habit_dict
+        raise HabitNotFoundException()
+    return habit
 
 
 
