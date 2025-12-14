@@ -1,5 +1,6 @@
 from datetime import date, timedelta
 from habit_tracker.core.models import Habit, HabitUpdate, HabitCreate
+from habit_tracker.core.exceptions import HabitAlreadyMarkedTodayException, HabitNameConflictException, HabitNotFoundException, InvalidInputException
 
 TODAY = date(2025, 7, 12)
 
@@ -16,11 +17,11 @@ def create_habit(habit_data: HabitCreate) -> Habit:
     global next_habit_id
 
     if len(habit_data.name.strip()) == 0:
-        raise ValueError("Название привычки не может быть пустым.")
+        raise InvalidInputException(detail="Habit name cannot be empty.")
 
     for habit in habits_db.values():
         if habit_data.name == habit.name:
-            raise ValueError("Привычка с таким называнием уже существует.")
+            raise HabitNameConflictException()
 
     new_habit = Habit(
         id=next_habit_id,
@@ -39,7 +40,7 @@ def mark_habit(habit_id: int) -> dict | None:
 
     date_today = TODAY
     if date_today in habit.marks:
-        raise ValueError("Привычка уже отмечена за сегодня.")
+        raise HabitAlreadyMarkedTodayException()
     
     habit.marks.append(date_today)
     marked_habit = {
@@ -106,14 +107,14 @@ def update_habit(habit_id: int, habit_data: HabitUpdate) -> Habit | None:
     habit_data_name = habit_data.name.strip()
     
     if len(habit_data_name) == 0:
-        raise ValueError("Название привычки не может быть пустым.")
+        raise InvalidInputException(detail="Habit name cannot be empty.")
 
     if habit_data_name == habit.name:
         return habit
 
     for h in habits_db.values():
         if habit_data_name == h.name:
-            raise ValueError("Привычка с таким названием уже существует.")
+            raise HabitNotFoundException()
             
     habit.name = habit_data_name
     return habit
