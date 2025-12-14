@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Трекер привычек</title>
+    <link rel="stylesheet" href="{{ url_for('static', path='css/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>Мои привычки</h1>
+
+        {% if error %}
+            <p class="error-message">{{ error }}</p>
+        {% endif %}
+
+        <form action="/habits" method="post" class="add-habit-form">
+            <input type="text" name="name" placeholder="Новая привычка" required>
+            <button type="submit">Добавить</button>
+        </form>
+
+        <ul class="habit-list">
+            {% for habit in habits %}
+                <li class="habit-item">
+                    <a href="/habit/{{ habit.id }}/" class="habit-link">
+                        {{ habit.name }} (Streak: {{ habit.streak }})
+                    </a>
+                    {% if not habit.marked_today %}
+                        <form action="/habit/{{ habit.id }}/mark/" method="post" style="display: inline;">
+                            <button type="submit" class="mark-button">Выполнил сегодня</button>
+                        </form>
+                    {% else %}
+                        <span class="marked-today-message">Отмечено сегодня!</span>
+                    {% endif %}
+                </li>
+            {% else %}
+                <p>У вас пока нет привычек. Добавьте первую!</p>
+            {% endfor %}
+        </ul>
+
+        <p><a href="/stats/" class="stats-link">Посмотреть статистику</a></p>
+    </div>
+    <script src="{{ url_for('static', path='js/script.js') }}"></script>
+</body>
+</html>
